@@ -1,5 +1,5 @@
 from flask_restx import Resource, Namespace
-from flask import jsonify
+from flask import jsonify, abort
 from models import Genre, GenreSchema
 from setup_db import db
 
@@ -18,5 +18,8 @@ class GenreView(Resource):
 class GenreView(Resource):
     def get(self, rid):
         r = db.session.query(Genre).get(rid)
-        sm_d = GenreSchema().dump(r)
-        return jsonify(sm_d, 200)
+        if r is None:
+            return abort(404)
+        else:
+            sm_d = GenreSchema().dump(r)
+            return jsonify(sm_d, 200)
