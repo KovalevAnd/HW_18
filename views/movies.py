@@ -1,5 +1,7 @@
 from flask_restx import Resource, Namespace
-from flask import jsonify, request
+from flask import jsonify, request, abort, Response
+from sqlalchemy import func
+
 from models import Movie, MovieSchema
 from setup_db import db
 
@@ -18,19 +20,24 @@ class MoviesView(Resource):
         return jsonify(res, 200)
 
     def post(self):
+
         req_json = request.json
         new_movie = Movie(**req_json)
         with db.session.begin():
             db.session.add(new_movie)
-        return "", 201
+            max_id = db.session.query(func.max(Movie.id)).scalar()
+        return Response(headers={'Location': f'/movie/{max_id}'})
 
 
 @movies_ns.route('/<int:rid>')
 class MoviesView(Resource):
     def get(self, rid):
         r = db.session.query(Movie).get(rid)
-        sm_d = MovieSchema().dump(r)
-        return jsonify(sm_d, 200)
+        if r is None:
+            return abort(404)
+        else:
+            sm_d = MovieSchema().dump(r)
+            return jsonify(sm_d, 200)
 
     def put(self, rid):
         movie = Movie.query.get(rid)
